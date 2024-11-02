@@ -1,3 +1,3 @@
-FaceDetectAndLandmark 
-detect model: yolo8n 
-landmark model: 2dfan4
+FaceDetectAndLandmark  
+detect model: yolo8n  
+landmark model: 2dfan4  
