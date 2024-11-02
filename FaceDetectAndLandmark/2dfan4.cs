@@ -82,27 +82,27 @@ namespace FaceLandmark
         }
         private static torch.Tensor NormalTransformPixel(int height, int width)
         {
-            var tr_mat = torch.tensor(new float[] { 1f, 0f, -1f, 0f, 1f, -1f, 0f, 0f, 1f }).reshape(3,3);
-            float width_denom, height_denom;
+            var trMat = torch.tensor(new float[] { 1f, 0f, -1f, 0f, 1f, -1f, 0f, 0f, 1f }).reshape(3,3);
+            float widthDenom, heightDenom;
             if (width == 1)
             {
-                width_denom = (float)1e-14;
+                widthDenom = (float)1e-14;
             }
             else
             {
-                width_denom = width - 1;
+                widthDenom = width - 1;
             }
             if (height == 1)
             {
-                height_denom = (float)1e-14;
+                heightDenom = (float)1e-14;
             }
             else
             {
-                height_denom = height - 1;
+                heightDenom = height - 1;
             }
-            tr_mat[0,0] = tr_mat[0,0] * 2.0f / width_denom;
-            tr_mat[1,1] = tr_mat[1,1] * 2.0f / height_denom;
-            return tr_mat.unsqueeze(0);
+            trMat[0,0] = trMat[0,0] * 2.0f / widthDenom;
+            trMat[1,1] = trMat[1,1] * 2.0f / heightDenom;
+            return trMat.unsqueeze(0);
         }
         private static torch.Tensor NormalizeHomography(torch.Tensor dstPixTransSrcPix, torch.Size dsizeSrc, torch.Size dsizeDst)
         {
