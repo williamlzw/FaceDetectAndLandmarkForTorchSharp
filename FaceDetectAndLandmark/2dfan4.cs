@@ -38,6 +38,7 @@ namespace FaceLandmark
         /// <returns></returns>
         public LandmarkResult GetLandmark(torch.Tensor img, torch.Tensor bounding_box)
         {
+            img = img.unsqueeze(0).to(torch.float32);
             var scale = 195f / torch.subtract(bounding_box[TensorIndex.Slice(2, null)], bounding_box[TensorIndex.Slice(null, 2)]).max();
             var translation = (256f - torch.add(bounding_box[TensorIndex.Slice(2, null)], bounding_box[TensorIndex.Slice(null, 2)]) * scale) * 0.5f;
             var(cropVisionFrame, affineMatrix) = WarpFaceByTranslation(img, translation, scale, new torch.Size(new int[] { 256, 256 }));
@@ -139,17 +140,17 @@ namespace FaceLandmark
         /// <summary>
         /// cv2.warpAffine
         /// </summary>
-        /// <param name="src">[C,H,W]</param>
-        /// <param name="M">[1,H,W]</param>
+        /// <param name="src">[1,C,H,W]</param>
+        /// <param name="M">[1,2,3]</param>
         private static torch.Tensor WarpAffineTorch(torch.Tensor src, torch.Tensor M, torch.Size dstSize)
         {
             int H = (int)src.shape[2];
             int W = (int)src.shape[3];
-            var matric3x3 = ConvertAffinematrixToHomography(M);
-            var dstNormTransSrcNorm = NormalizeHomography(matric3x3, new torch.Size(new int[] { H, W }), dstSize);
+            var matrix3x3 = ConvertAffinematrixToHomography(M);
+            var dstNormTransSrcNorm = NormalizeHomography(matrix3x3, new torch.Size(new int[] { H, W }), dstSize);
             var srcNormTransDstNorm = torch.linalg.inv(dstNormTransSrcNorm);
-            var grid = torch.nn.functional.affine_grid(srcNormTransDstNorm[TensorIndex.Colon, TensorIndex.Slice(null, 2), TensorIndex.Colon], size: new long[] { 1, 3, 256, 256 }, align_corners:true);
-            var warpSrc = torch.nn.functional.grid_sample(src.to(torch.float32), grid, padding_mode:GridSamplePaddingMode.Border, align_corners:true);
+            var grid = torch.nn.functional.affine_grid(srcNormTransDstNorm[TensorIndex.Colon, TensorIndex.Slice(null, 2), TensorIndex.Colon], size: new long[] { 1, 3, dstSize[0], dstSize[1] }, align_corners:true);
+            var warpSrc = torch.nn.functional.grid_sample(src, grid, padding_mode:GridSamplePaddingMode.Border, align_corners:true);
             return warpSrc;
         }
 
@@ -157,7 +158,7 @@ namespace FaceLandmark
         /// cv2.transform
         /// </summary>
         /// <param name="points">[N,2]</param>
-        /// <param name="affine_matrix">[2,3]</param>
+        /// <param name="affineMatrix">[2,3]</param>
         /// <returns></returns>
         private static torch.Tensor TransformTorch(torch.Tensor points, torch.Tensor affineMatrix)
         {
@@ -169,12 +170,20 @@ namespace FaceLandmark
             return transformedTensor;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="src"></param>
+        /// <param name="translation"></param>
+        /// <param name="scale"></param>
+        /// <param name="dstSize"></param>
+        /// <returns></returns>
         private static (torch.Tensor, torch.Tensor) WarpFaceByTranslation(torch.Tensor src, torch.Tensor translation, torch.Tensor scale, torch.Size dstSize)
         {
             float[] arr = new float[] { scale.item<float>(), 0f, translation[0].item<float>(), 0f, scale.item<float>(), translation[1].item<float>()};
             var M = torch.tensor(arr).reshape(2,3).unsqueeze(0);
             var affineMatrix = InverseAffineTransformTorch(M);
-            var warpSrc = WarpAffineTorch(src.unsqueeze(0), M, dstSize);
+            var warpSrc = WarpAffineTorch(src, M, dstSize);
             return (warpSrc, affineMatrix);
         }
     }
