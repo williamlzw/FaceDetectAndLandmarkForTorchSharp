@@ -6,4 +6,4 @@ windows10, dotnet8
 ## Checkpoint  
 download url: https://huggingface.co/williamlzw/onnx_model  
 ## Demo  
-![image](FaceEnhanceForTorchsharp/data/result.jpg) 
+![image](FaceDetectAndLandmark/data/result.jpg) 
